@@ -92,7 +92,7 @@ func createCombinedNodeCluster(t *testing.T, testName, tmpDir string, nNodes, ba
 	// Create the first node, special case.
 	c := baseConfig
 	if c == nil {
-		c, _ = main.NewConfig()
+		c, _ = main.NewTestConfig()
 	}
 	c.Broker.Dir = filepath.Join(tmpBrokerDir, strconv.Itoa(basePort))
 	c.Data.Dir = filepath.Join(tmpDataDir, strconv.Itoa(basePort))
@@ -1078,7 +1078,7 @@ func runTestsData(t *testing.T, testName string, nodes Cluster, database, retent
 		},
 		{
 			query:    `SHOW CONTINUOUS QUERIES`,
-			expected: `{"results":[{"series":[{"name":"%DB%","columns":["name","query"],"values":[["myquery","CREATE CONTINUOUS QUERY myquery ON %DB% BEGIN SELECT count() INTO measure1 FROM myseries GROUP BY time(10m) END"]]}]}]}`,
+			expected: `{"results":[{"series":[{"name":"internal","columns":["name","query"]},{"name":"%DB%","columns":["name","query"],"values":[["myquery","CREATE CONTINUOUS QUERY myquery ON %DB% BEGIN SELECT count() INTO measure1 FROM myseries GROUP BY time(10m) END"]]}]}]}`,
 		},
 	}
 
@@ -1307,7 +1307,7 @@ func Test_ServerSingleGraphiteIntegration(t *testing.T) {
 	testName := "graphite integration"
 	dir := tempfile()
 	now := time.Now().UTC().Round(time.Millisecond)
-	c, _ := main.NewConfig()
+	c, _ := main.NewTestConfig()
 	g := main.Graphite{
 		Enabled:  true,
 		Database: "graphite",
@@ -1357,7 +1357,7 @@ func Test_ServerSingleGraphiteIntegration_ZeroDataPoint(t *testing.T) {
 	testName := "graphite integration"
 	dir := tempfile()
 	now := time.Now().UTC().Round(time.Millisecond)
-	c, _ := main.NewConfig()
+	c, _ := main.NewTestConfig()
 	g := main.Graphite{
 		Enabled:  true,
 		Database: "graphite",
@@ -1408,7 +1408,7 @@ func Test_ServerSingleGraphiteIntegration_NoDatabase(t *testing.T) {
 	testName := "graphite integration"
 	dir := tempfile()
 	now := time.Now().UTC().Round(time.Millisecond)
-	c, _ := main.NewConfig()
+	c, _ := main.NewTestConfig()
 	g := main.Graphite{
 		Enabled:  true,
 		Port:     2203,
@@ -1416,7 +1416,6 @@ func Test_ServerSingleGraphiteIntegration_NoDatabase(t *testing.T) {
 	}
 	c.Graphites = append(c.Graphites, g)
 	c.Logging.WriteTracing = true
-
 	t.Logf("Graphite Connection String: %s\n", g.ConnectionString(c.BindAddress))
 	nodes := createCombinedNodeCluster(t, testName, dir, nNodes, basePort, c)
 
@@ -1428,7 +1427,7 @@ func Test_ServerSingleGraphiteIntegration_NoDatabase(t *testing.T) {
 	}
 
 	// Need to wait for the database to be created
-	expected := `{"results":[{"series":[{"columns":["name"],"values":[["graphite"]]}]}]}`
+	expected := `{"results":[{"series":[{"columns":["name"],"values":[["graphite"],["internal"]]}]}]}`
 	got, ok := queryAndWait(t, nodes, "graphite", `show databases`, expected, 2*time.Second)
 	if !ok {
 		t.Errorf(`Test "%s" failed, expected: %s, got: %s`, testName, expected, got)
